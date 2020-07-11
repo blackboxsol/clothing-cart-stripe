@@ -32,7 +32,7 @@ export const createUserProfileDocument = async (userAuth, additionalData) => {
 
     const userSnapshot = await userRef.get();
 
-    // console.log(userSnapshot);
+  
 
     if(await !userSnapshot.exists){
         const {displayName, email} = userAuth;
@@ -86,11 +86,20 @@ export const convertCollectonsSnapshotToMap = collections => {
     },{});
 }
 
-const provider  = new firebase.auth.GoogleAuthProvider();
-provider.setCustomParameters({
+export const getCurrentUser = () => {
+    return new Promise((resolve, reject) => {
+        const unsubscribe = auth.onAuthStateChanged(userAuth => {
+            unsubscribe();
+            resolve(userAuth);
+        }, reject);
+    });
+};
+
+export const googleProvider  = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({
     prompt: 'select_account'
 });
 
-export const SignInWithGoogle = () => auth.signInWithPopup(provider);
+export const SignInWithGoogle = () => auth.signInWithPopup(googleProvider);
 
 export default firebase;

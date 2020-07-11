@@ -1,45 +1,27 @@
 import React from 'react';
 import { Route } from 'react-router-dom';
 import { connect } from 'react-redux';
+import { createStructuredSelector} from 'reselect';
 
-import CollectionOverview from '../../components/collections-overview/collections-overview.component';
-import CollectionPage from '../collection/collection-page';
-import WithSpinner from '../../components/with-spinner/with-spinner.component';
+// import CollectionOverview from '../../components/collections-overview/collections-overview.component';
+// import CollectionPage from '../collection/collection-page';
+import CollectionOverviewContainer from '../../components/collections-overview/collections-overview.container';
+import CollectionPageContainer from '../collection/collection-page.container';
 
-import { firestore, convertCollectonsSnapshotToMap } from '../../firebase/firebase.utils'
-import { updateCollections } from '../../redux/shop/shop.actions';
 
-const CollectionOverviewWithSpinner = WithSpinner(CollectionOverview);
-const CollectionPageWithSpinner = WithSpinner(CollectionPage);
+// import WithSpinner from '../../components/with-spinner/with-spinner.component';
+import { selectIsCollectionFetching , selectIsCollectionLoaded} from '../../redux/shop/shop.selector'
+import { fetchCollectionsStart, fetchCollectionsStartAsync } from '../../redux/shop/shop.actions';
+
+// const CollectionOverviewWithSpinner = WithSpinner(CollectionOverview);
+// const CollectionPageWithSpinner = WithSpinner(CollectionPage);
 
 
 class ShopPage extends React.Component{
 
-    state = {
-        loading: true
-    };
-
-    unsubscribeFromSnapshot = null;
-
     componentDidMount(){
-
-        const { updateCollections } = this.props;
-
-        const collectionRef = firestore.collection('collections');
-
-        fetch(
-            'https://firestore.googleapis.com/v1/projects/boutique-clothing/databases/(default)/documents/collections'
-        )
-        .then(response => response.json())
-        .then(collections => console.log(collections));
-
-        collectionRef.get().then( async snapShot =>{ 
-           const collectionMap = convertCollectonsSnapshotToMap(snapShot);
-           
-            updateCollections(collectionMap);
-            console.log(collectionMap);
-            this.setState({loading: false});
-        });
+        const { fetchCollectionsStart } = this.props;
+        fetchCollectionsStart();
     }
 
     componentWillUnmount(){
@@ -47,30 +29,33 @@ class ShopPage extends React.Component{
     }
 
     render(){
-        const { match } = this.props;
-        const {loading} = this.state;
-
+        const { match, isCollectionFetching, isCollectionLoaded } = this.props;
         return (
             <div className='shop-page'>
                 <Route 
                     exact 
                     path={`${match.path}`} 
-                   // component={CollectionOverview}
-                    render={(props) => <CollectionOverviewWithSpinner isLoading={loading} {...props} />}
+                   component={CollectionOverviewContainer}
+                    // render={(props) => <CollectionOverviewWithSpinner isLoading={isCollectionFetching} {...props} />}
                 />
                 <Route
                     path={`${match.path}/:collectionId`} 
-                    // component={CollectionPage}
-                    render={(props)=> <CollectionPageWithSpinner isLoading={loading} {...props} />}
+                    component={CollectionPageContainer}
+                    // render={ props => <CollectionPageWithSpinner isLoading={!isCollectionLoaded} {...props} />}
                 />
             </div>
         )
     }
 }
 
+const mapStateToProps = createStructuredSelector({
+    isCollectionFetching: selectIsCollectionFetching,
+    isCollectionLoaded: selectIsCollectionLoaded
+});
+
 const mapDispatchToPops = dispatch => ({
-    updateCollections: collections => dispatch(updateCollections(collections))
+    fetchCollectionsStart: collections => dispatch(fetchCollectionsStart(collections))
 })
 
 
-export default connect(null, mapDispatchToPops)(ShopPage);
+export default connect(mapStateToProps, mapDispatchToPops)(ShopPage);
